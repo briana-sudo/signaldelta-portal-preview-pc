@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SignalDelta — AI Trading System v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root {
+  --navy:   #060d18;
+  --navy2:  #0a1525;
+  --navy3:  #0e1c30;
+  --navy4:  #13243e;
+  --cyan:   #00c2ff;
+  --cyan2:  rgba(0,194,255,0.18);
+  --cyan3:  rgba(0,194,255,0.07);
+  --green:  #00e676;
+  --green2: rgba(0,230,118,0.15);
+  --red:    #ff3d57;
+  --red2:   rgba(255,61,87,0.14);
+  --amber:  #ffab00;
+  --amber2: rgba(255,171,0,0.14);
+  --white:  #ddeeff;
+  --w2:     #7a9bb8;
+  --w3:     #3d6080;
+  --border: rgba(0,194,255,0.10);
+  --mono:   'Share Tech Mono', monospace;
+  --disp:   'Barlow Condensed', sans-serif;
+  --body:   'Barlow', sans-serif;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+
+html,body{
+  width:100vw;height:100vh;overflow:hidden;
+  background:var(--navy);color:var(--white);
+  font-family:var(--body);display:flex;flex-direction:column;
+}
+
+/* scanlines */
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.025) 3px,rgba(0,0,0,0.025) 4px);
+}
+
+/* ─── HEADER ─────────────────────────────── */
+.hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  height:42px;padding:0 16px;flex-shrink:0;
+  background:var(--navy2);border-bottom:1px solid var(--border);
+}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-mark{
+  width:26px;height:26px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.logo-mark svg{width:100%;height:100%;display:block;}
+.logo-text{display:flex;align-items:baseline;gap:0;}
+.ls{font-family:var(--disp);font-weight:900;font-size:20px;letter-spacing:3px;color:var(--white);}
+.ld{font-family:var(--disp);font-weight:900;font-size:20px;letter-spacing:3px;color:var(--cyan);}
+.ltag{font-family:var(--mono);font-size:8px;color:var(--w3);letter-spacing:2px;
+  border:1px solid var(--border);padding:2px 6px;margin-left:10px;}
+
+.hdr-mid{display:flex;align-items:center;gap:14px;}
+.pill{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;
+  letter-spacing:1px;color:var(--w2);}
+.dot{width:5px;height:5px;border-radius:50%;}
+.dot-green{background:var(--green);box-shadow:0 0 6px var(--green);animation:pdot 2s ease-in-out infinite;}
+.dot-cyan{background:var(--cyan);box-shadow:0 0 6px var(--cyan);}
+@keyframes pdot{0%,100%{opacity:1}50%{opacity:.4}}
+.sim-tag{font-family:var(--mono);font-size:8px;letter-spacing:2px;color:var(--amber);
+  border:1px solid var(--amber);padding:2px 8px;background:var(--amber2);}
+
+/* mode toggle (inline pills) */
+.mode-toggle{display:flex;align-items:center;gap:0;
+  border:1px solid var(--border);background:var(--navy3);}
+.mode-pill{
+  font-family:var(--mono);font-size:8px;letter-spacing:2px;
+  padding:3px 9px;color:var(--w3);cursor:pointer;
+  border-right:1px solid var(--border);transition:all .2s;
+  user-select:none;
+}
+.mode-pill:last-child{border-right:none;}
+.mode-pill:hover{color:var(--w2);}
+.mode-pill.active{
+  background:var(--cyan2);color:var(--cyan);
+  text-shadow:0 0 6px rgba(0,194,255,0.5);
+}
+
+.clock{font-family:var(--mono);font-size:13px;color:var(--cyan);letter-spacing:2px;}
+
+/* ─── ACCOUNT BAR ────────────────────────── */
+.acct{
+  height:50px;background:var(--navy3);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 16px;gap:0;flex-shrink:0;
+}
+.aitem{display:flex;flex-direction:column;justify-content:center;padding:0 16px;gap:1px;}
+.aitem+.aitem{border-left:1px solid var(--border);}
+.alabel{font-family:var(--mono);font-size:8px;color:var(--w3);letter-spacing:2px;text-transform:uppercase;}
+.aval{font-family:var(--mono);font-size:16px;letter-spacing:1px;color:var(--white);}
+.aval.g{color:var(--green);}
+.aval.c{color:var(--cyan);}
+.aval.r{color:var(--red);}
+.spacer{flex:1;}
+.poll-ind{
+  display:flex;align-items:center;gap:6px;
+  font-family:var(--mono);font-size:8px;color:var(--w3);letter-spacing:1px;
+}
+.poll-ring{
+  width:12px;height:12px;border-radius:50%;
+  border:1px solid var(--w3);position:relative;
+}
+.poll-fill{
+  position:absolute;inset:2px;border-radius:50%;background:var(--w3);
+  transform:scale(0);transition:transform 0.2s;
+}
+.poll-ring.active .poll-fill{transform:scale(1);background:var(--cyan);}
+
+/* ─── MAIN LAYOUT ── 4 COLUMNS ───────────── */
+.main{
+  flex:1;display:grid;overflow:hidden;
+  grid-template-columns:240px 1fr 220px 200px;
+  grid-template-rows:1fr;
+  gap:1px;background:rgba(0,194,255,0.05);
+}
+
+.panel{
+  background:var(--navy2);overflow:hidden;
+  padding:12px;position:relative;
+  display:flex;flex-direction:column;
+}
+
+.ptitle{
+  font-family:var(--disp);font-weight:600;font-size:9px;
+  letter-spacing:3px;color:var(--w3);text-transform:uppercase;
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;flex-shrink:0;
+}
+.ptitle-bar{width:16px;height:1px;background:var(--cyan);margin-right:6px;display:inline-block;}
+.ptitle-r{font-family:var(--mono);font-size:8px;color:var(--w3);}
+
+/* col 1 — scanner full height */
+.col-scanner{display:flex;flex-direction:column;background:rgba(0,194,255,0.05);}
+.col-scanner .panel{flex:1;}
+
+/* col 2 — center column: positions / equity / events (50/15/35) */
+.col-center{
+  display:grid;
+  grid-template-rows:50% 15% 35%;
+  gap:1px;
+  background:rgba(0,194,255,0.05);
+  min-width:0;
+}
+
+/* col 3 — metrics top, kernel bottom (1fr 1fr) */
+.col-metrics{
+  display:grid;
+  grid-template-rows:1fr 1fr;
+  gap:1px;
+  background:rgba(0,194,255,0.05);
+}
+
+/* col 4 — returns matrix top, rules bottom (1fr 1fr) */
+.col-extra{
+  display:grid;
+  grid-template-rows:1fr 1fr;
+  gap:1px;
+  background:rgba(0,194,255,0.05);
+}
+
+/* ─── SCANNER ────────────────────────────── */
+.scanner-list{flex:1;display:flex;flex-direction:column;gap:2px;overflow:hidden;}
+
+.srow{
+  display:grid;grid-template-columns:58px 1fr 36px;
+  align-items:center;gap:6px;
+  padding:5px 7px;background:var(--navy3);
+  border:1px solid transparent;font-family:var(--mono);
+  font-size:9px;transition:border-color .3s,background .3s;
+  position:relative;flex-shrink:0;
+}
+.srow.eval{border-color:rgba(0,194,255,0.3);background:var(--cyan3);}
+.srow.fired{border-color:var(--green);background:var(--green2);}
+.srow.thresh{border-color:var(--amber);background:var(--amber2);}
+
+.sasset{color:var(--white);font-size:10px;font-weight:700;letter-spacing:.5px;}
+.strack{font-size:7px;color:var(--w3);letter-spacing:1px;margin-top:1px;}
+
+.sbar-bg{height:3px;background:var(--navy4);border-radius:2px;position:relative;}
+.sbar-fill{position:absolute;left:0;top:0;bottom:0;border-radius:2px;transition:width .5s ease;}
+
+.sscore{text-align:right;font-size:11px;}
+.sscore.lo{color:var(--w3);}
+.sscore.mi{color:var(--amber);}
+.sscore.hi{color:var(--green);}
+
+.fired-badge{
+  position:absolute;right:4px;top:50%;transform:translateY(-50%);
+  font-family:var(--mono);font-size:7px;color:var(--green);
+  border:1px solid var(--green);padding:1px 4px;background:var(--green2);
+  letter-spacing:1px;
+}
+
+/* ─── POSITIONS ─────────────────────────── */
+.pos-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:9px;flex:1;}
+.pos-table th{
+  text-align:left;color:var(--w3);font-size:8px;letter-spacing:2px;
+  padding:4px 8px;border-bottom:1px solid var(--border);
+  font-family:var(--disp);font-weight:600;text-transform:uppercase;
+}
+.pos-table td{padding:7px 8px;border-bottom:1px solid rgba(0,194,255,0.04);vertical-align:middle;}
+.pos-table tr:hover td{background:var(--navy3);}
+
+.passet{font-size:11px;font-weight:700;color:var(--white);letter-spacing:.5px;}
+.ptrack{font-size:7px;padding:2px 4px;border-radius:1px;letter-spacing:1px;}
+.ptrack.con{color:var(--w2);border:1px solid var(--w3);}
+.ptrack.mod{color:var(--cyan);border:1px solid var(--cyan);}
+.ptrack.agg{color:var(--amber);border:1px solid var(--amber);}
+.pconv{font-size:7px;letter-spacing:1px;}
+.pconv.std{color:var(--w3);}
+.pconv.hi{color:var(--cyan);}
+.pconv.max{color:var(--green);font-weight:700;}
+
+.prog-wrap{width:90px;}
+.prog-bg{height:3px;background:var(--navy4);border-radius:2px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:2px;transition:width 1s;}
+
+.ppnl{font-size:11px;font-weight:700;font-family:var(--mono);}
+
+/* ─── EQUITY CURVE ──────────────────────── */
+.eq-panel{
+  display:flex;flex-direction:column;
+  padding:8px 12px;
+}
+.eq-head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:4px;flex-shrink:0;
+}
+.eq-title{
+  font-family:var(--disp);font-weight:600;font-size:9px;
+  letter-spacing:3px;color:var(--w3);text-transform:uppercase;
+  display:flex;align-items:center;
+}
+.eq-stats{
+  display:flex;gap:16px;font-family:var(--mono);font-size:8px;
+  color:var(--w3);letter-spacing:1px;
+}
+.eq-stats span{color:var(--cyan);margin-left:4px;}
+.eq-stats span.g{color:var(--green);}
+.eq-stats span.r{color:var(--red);}
+.eq-svg-wrap{flex:1;position:relative;min-height:0;}
+#equity-svg{width:100%;height:100%;display:block;overflow:visible;}
+
+/* ─── EVENT FEED ────────────────────────── */
+.event-feed{flex:1;display:flex;flex-direction:column;gap:2px;overflow:hidden;}
+
+.ev{
+  display:flex;align-items:center;gap:8px;
+  padding:5px 8px;background:var(--navy3);
+  border-left:2px solid transparent;
+  font-family:var(--mono);font-size:9px;
+  animation:ev-in .4s ease;flex-shrink:0;
+}
+@keyframes ev-in{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+
+.ev.open{border-left-color:var(--green);}
+.ev.close-win{border-left-color:var(--cyan);}
+.ev.close-loss{border-left-color:var(--red);}
+.ev.loop{border-left-color:var(--amber);}
+.ev.sync{border-left-color:var(--w3);}
+.ev.signal{border-left-color:var(--cyan);}
+.ev.gate{border-left-color:var(--green);}
+.ev.rule{border-left-color:var(--amber);}
+
+.ev-icon{font-size:11px;flex-shrink:0;}
+.ev-time{color:var(--w3);font-size:8px;flex-shrink:0;min-width:42px;}
+.ev-text{flex:1;color:var(--w2);font-size:9px;letter-spacing:.3px;}
+.ev-val{font-size:9px;flex-shrink:0;}
+.ev-val.g{color:var(--green);}
+.ev-val.r{color:var(--red);}
+.ev-val.c{color:var(--cyan);}
+.ev-val.a{color:var(--amber);}
+
+/* ─── METRIC CARDS ───────────────────────── */
+.mc{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--navy3);border:1px solid var(--border);
+  padding:8px 10px;margin-bottom:4px;flex-shrink:0;gap:8px;
+}
+.mc-delta{
+  border-color:rgba(0,194,255,0.35);
+  background:linear-gradient(135deg,var(--navy3),rgba(0,194,255,0.07));
+  box-shadow:0 0 14px rgba(0,194,255,0.12);
+  padding:10px 10px;margin-bottom:6px;
+}
+.mc-delta.offline{
+  border-color:rgba(255,171,0,0.25);
+  background:linear-gradient(135deg,var(--navy3),rgba(255,171,0,0.05));
+  box-shadow:none;
+}
+.mc-left{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;}
+.mc-label{
+  font-family:var(--disp);font-weight:600;font-size:8px;
+  letter-spacing:3px;color:var(--w3);text-transform:uppercase;
+}
+.mc-value{font-family:var(--mono);font-size:20px;line-height:1;color:var(--white);}
+.mc-value.g{color:var(--green);}
+.mc-value.c{color:var(--cyan);}
+.mc-value.dim{color:var(--w3);}
+.mc-sub{font-family:var(--mono);font-size:7px;color:var(--w3);letter-spacing:.3px;}
+.mc-arc{flex-shrink:0;}
+
+/* ─── KERNEL 3D ──────────────────────────── */
+.p-kernel{padding:0;overflow:hidden;position:relative;}
+#kernel-canvas{width:100%;height:100%;display:block;}
+.kernel-overlay{
+  position:absolute;top:0;left:0;right:0;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 10px;pointer-events:none;
+  background:linear-gradient(180deg,rgba(6,13,24,.85),transparent);
+}
+.kernel-title{
+  font-family:var(--disp);font-weight:600;font-size:9px;
+  letter-spacing:3px;color:var(--w3);text-transform:uppercase;
+}
+.kernel-count{font-family:var(--mono);font-size:8px;color:var(--cyan);letter-spacing:1px;}
+.kernel-bottom{
+  position:absolute;bottom:0;left:0;right:0;
+  padding:6px 10px;pointer-events:none;
+  background:linear-gradient(0deg,rgba(6,13,24,.85),transparent);
+  display:flex;justify-content:space-between;align-items:flex-end;
+}
+.kernel-stat{font-family:var(--mono);font-size:8px;color:var(--w3);letter-spacing:.5px;}
+.kernel-stat span{color:var(--cyan);}
+.kernel-stat span.amber{color:var(--amber);}
+
+.kernel-legend{
+  position:absolute;left:8px;bottom:24px;
+  display:flex;flex-direction:column;gap:2px;
+  pointer-events:none;
+}
+.kl-item{
+  display:flex;align-items:center;gap:5px;
+  font-family:var(--mono);font-size:7px;color:var(--w3);letter-spacing:.5px;
+}
+.kl-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+
+/* ─── RETURNS MATRIX ────────────────────── */
+.matrix{
+  flex:1;display:flex;flex-direction:column;
+  font-family:var(--mono);font-size:8px;
+  overflow:hidden;
+}
+.matrix-grid{
+  display:grid;
+  grid-template-columns:48px 1fr 1fr 1fr 1fr;
+  gap:2px;
+  flex:1;
+}
+.matrix-h{
+  font-family:var(--disp);font-weight:600;font-size:7px;
+  letter-spacing:2px;color:var(--w3);text-transform:uppercase;
+  text-align:center;display:flex;align-items:center;justify-content:center;
+  padding:4px 0;border-bottom:1px solid var(--border);
+}
+.matrix-h.sigma{color:var(--cyan);}
+.matrix-rh{
+  font-family:var(--disp);font-weight:600;font-size:8px;
+  letter-spacing:1px;color:var(--w2);text-transform:uppercase;
+  display:flex;align-items:center;padding-left:4px;
+  border-right:1px solid var(--border);
+}
+.matrix-rh.sigma{color:var(--cyan);font-weight:700;}
+.matrix-cell{
+  background:var(--navy3);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:4px 2px;gap:2px;
+  border:1px solid transparent;
+}
+.matrix-cell.sigma-col{background:var(--cyan3);border-color:rgba(0,194,255,0.18);}
+.matrix-cell.sigma-row{background:var(--cyan3);border-color:rgba(0,194,255,0.18);}
+.matrix-cell.sigma-corner{background:rgba(0,194,255,0.12);border-color:var(--cyan);}
+.mc-w{font-size:9px;color:var(--white);font-weight:700;}
+.mc-w.g{color:var(--green);}
+.mc-w.r{color:var(--red);}
+.mc-s{font-size:7px;color:var(--w3);letter-spacing:.5px;}
+.mc-s.c{color:var(--cyan);}
+.mc-r{font-size:8px;color:var(--cyan);}
+.mc-r.g{color:var(--green);}
+.mc-r.r{color:var(--red);}
+.mc-r.big{font-size:11px;font-weight:700;}
+
+/* ─── RULES ADDED ───────────────────────── */
+.rules-list{
+  flex:1;display:flex;flex-direction:column;gap:3px;overflow:hidden;
+}
+.rule-row{
+  display:grid;grid-template-columns:18px 24px 1fr;
+  gap:6px;align-items:start;
+  padding:5px 6px;background:var(--navy3);
+  border-left:2px solid transparent;
+  font-family:var(--mono);
+  flex-shrink:0;
+}
+.rule-row.sec-a{border-left-color:var(--green);}
+.rule-row.sec-b{border-left-color:var(--red);}
+.rule-row.sec-c{border-left-color:var(--amber);}
+
+.rule-badge{
+  font-family:var(--disp);font-weight:900;font-size:9px;
+  letter-spacing:1px;text-align:center;
+  border:1px solid currentColor;padding:1px 0;line-height:1;
+}
+.rule-badge.sec-a{color:var(--green);}
+.rule-badge.sec-b{color:var(--red);}
+.rule-badge.sec-c{color:var(--amber);}
+
+.rule-day{
+  font-size:7px;color:var(--w3);letter-spacing:1px;
+  padding-top:2px;
+}
+.rule-text{
+  font-size:8px;color:var(--w2);letter-spacing:.2px;
+  line-height:1.4;
+}
+.rule-text strong{color:var(--white);font-weight:600;}
+
+.rules-foot{
+  font-family:var(--mono);font-size:7px;color:var(--w3);
+  letter-spacing:1px;text-align:center;padding-top:6px;
+  border-top:1px solid var(--border);margin-top:auto;flex-shrink:0;
+}
+.rules-foot span{color:var(--cyan);}
+
+/* ─── TRADE OVERLAY ──────────────────────── */
+.overlay{
+  position:fixed;inset:0;z-index:1000;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(6,13,24,.45);
+  opacity:0;pointer-events:none;
+  transition:opacity .3s;
+}
+.overlay.show{opacity:1;pointer-events:all;}
+
+.ov-card{
+  background:var(--navy2);border:1px solid var(--border);
+  width:520px;padding:28px;position:relative;
+  animation:card-in .4s ease;
+}
+@keyframes card-in{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+
+.ov-type{
+  font-family:var(--disp);font-weight:900;font-size:11px;
+  letter-spacing:4px;text-transform:uppercase;
+  margin-bottom:20px;display:flex;align-items:center;gap:10px;
+}
+.ov-asset{
+  font-family:var(--disp);font-weight:900;font-size:48px;
+  letter-spacing:2px;line-height:1;margin-bottom:4px;
+}
+.ov-price{
+  font-family:var(--mono);font-size:22px;color:var(--w2);
+  margin-bottom:20px;letter-spacing:2px;
+}
+
+.ov-indicators{
+  display:grid;grid-template-columns:1fr 1fr 1fr 1fr;
+  gap:8px;margin-bottom:20px;
+}
+.ov-ind{
+  background:var(--navy3);border:1px solid var(--border);
+  padding:8px 10px;
+}
+.ov-ind-name{font-family:var(--mono);font-size:8px;color:var(--w3);letter-spacing:2px;text-transform:uppercase;}
+.ov-ind-val{font-family:var(--mono);font-size:14px;margin-top:2px;}
+
+.ov-score-row{
+  display:flex;align-items:center;gap:12px;margin-bottom:20px;
+}
+.ov-score-label{font-family:var(--mono);font-size:9px;color:var(--w3);letter-spacing:2px;min-width:140px;}
+.ov-score-bar{flex:1;height:6px;background:var(--navy4);border-radius:3px;overflow:hidden;}
+.ov-score-fill{height:100%;border-radius:3px;transition:width 1s ease;}
+
+.ov-bottom{
+  display:flex;align-items:center;justify-content:space-between;
+  border-top:1px solid var(--border);padding-top:16px;
+}
+.ov-conviction{
+  font-family:var(--mono);font-size:10px;letter-spacing:2px;
+  padding:4px 12px;border-radius:1px;
+}
+.ov-status{
+  font-family:var(--disp);font-weight:900;font-size:14px;
+  letter-spacing:4px;text-transform:uppercase;
+}
+.ov-lane2{font-family:var(--mono);font-size:9px;color:var(--cyan);letter-spacing:1px;}
+
+.ov-countdown{
+  position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:var(--cyan);transform-origin:left;
+  animation:countdown 8s linear forwards;
+}
+@keyframes countdown{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+
+/* ─── TICKER ─────────────────────────────── */
+.ticker{
+  height:24px;background:var(--navy);border-top:1px solid var(--border);
+  overflow:hidden;flex-shrink:0;display:flex;align-items:center;
+}
+.ticker-inner{
+  display:flex;white-space:nowrap;
+  animation:tick 28s linear infinite;
+}
+@keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.ti{
+  display:flex;align-items:center;gap:6px;
+  padding:0 16px;border-right:1px solid var(--border);
+  font-family:var(--mono);font-size:9px;
+}
+.ti-sym{color:var(--w2);letter-spacing:1px;}
+.ti-px{color:var(--white);}
+.ti-ch.u{color:var(--green);}
+.ti-ch.d{color:var(--red);}
+
+/* ─── MINI WATERFALL IN ACCOUNT BAR ─────── */
+.acct-divider{width:1px;height:36px;background:var(--border);flex-shrink:0;margin:0 12px;}
+.acct-wf{
+  flex:1;display:flex;align-items:flex-end;gap:4px;
+  padding:6px 0 4px;position:relative;min-width:0;
+}
+.acct-wf-baseline{
+  position:absolute;bottom:4px;left:0;right:0;
+  height:1px;background:var(--border);
+}
+.acct-wf-col{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  flex:1;position:relative;
+}
+.acct-wf-bar{
+  width:100%;border-radius:2px 2px 0 0;
+  min-height:2px;transition:height .8s ease;
+}
+.acct-wf-bar.pos{
+  background:linear-gradient(180deg,var(--green),rgba(0,230,118,.5));
+  box-shadow:0 0 4px rgba(0,230,118,.3);
+}
+.acct-wf-bar.neg{
+  background:linear-gradient(180deg,var(--red),rgba(255,61,87,.5));
+}
+.acct-wf-bar.cur{
+  background:linear-gradient(180deg,var(--cyan),rgba(0,194,255,.5));
+  box-shadow:0 0 6px rgba(0,194,255,.4);
+  animation:wf-pulse 2s ease-in-out infinite;
+}
+@keyframes wf-pulse{0%,100%{box-shadow:0 0 6px rgba(0,194,255,.4)}50%{box-shadow:0 0 12px rgba(0,194,255,.7)}}
+.acct-wf-pct{
+  font-family:var(--mono);font-size:7px;
+  white-space:nowrap;line-height:1;
+}
+.acct-wf-lbl{
+  font-family:var(--mono);font-size:6px;color:var(--w3);
+  letter-spacing:.5px;
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="logo">
+    <div class="logo-mark">
+      <!-- SignalDelta logo mark — badge from the master logo file -->
+      <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="logoBg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#0A1628;stop-opacity:1"/>
+            <stop offset="100%" style="stop-color:#1A3A5C;stop-opacity:1"/>
+          </linearGradient>
+          <linearGradient id="logoSignal" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#00C2FF;stop-opacity:0.3"/>
+            <stop offset="50%" style="stop-color:#00C2FF;stop-opacity:1"/>
+            <stop offset="100%" style="stop-color:#00C2FF;stop-opacity:0.3"/>
+          </linearGradient>
+          <filter id="logoGlow">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        <!-- background circle -->
+        <circle cx="200" cy="200" r="196" fill="url(#logoBg)"/>
+        <circle cx="200" cy="200" r="196" fill="none" stroke="#00C2FF" stroke-width="2" opacity="0.4"/>
+        <!-- waveform across center -->
+        <polyline
+          points="60,200 90,200 110,160 130,240 150,175 170,225 190,155 210,245 230,175 250,225 270,200 310,200 340,200"
+          fill="none" stroke="url(#logoSignal)" stroke-width="4"
+          stroke-linecap="round" stroke-linejoin="round" filter="url(#logoGlow)"/>
+        <!-- delta triangle overlay -->
+        <polygon points="268,148 316,232 220,232"
+          fill="none" stroke="#00C2FF" stroke-width="3.5"
+          stroke-linejoin="round" opacity="0.9" filter="url(#logoGlow)"/>
+        <polygon points="268,148 316,232 220,232" fill="#00C2FF" opacity="0.08"/>
+      </svg>
+    </div>
+    <div class="logo-text">
+      <span class="ls">SIGNAL</span><span class="ld">DELTA</span>
+      <span class="ltag">AI TRADING SYSTEM v1.0</span>
+    </div>
+  </div>
+  <div class="hdr-mid">
+    <div class="pill"><div class="dot dot-green"></div>SYSTEM ACTIVE</div>
+    <div class="pill"><div class="dot dot-cyan"></div>PAPER TRADING</div>
+    <div class="sim-tag">SIMULATED PERFORMANCE</div>
+    <div class="mode-toggle" id="mode-toggle">
+      <div class="mode-pill active" data-mode="live">LIVE</div>
+      <div class="mode-pill" data-mode="training">TRAINING</div>
+      <div class="mode-pill" data-mode="combined">COMBINED</div>
+    </div>
+  </div>
+  <div class="clock" id="clock">00:00:00</div>
+</div>
+
+<!-- ACCOUNT BAR -->
+<div class="acct">
+  <div class="aitem">
+    <span class="alabel">Capital Base</span>
+    <span class="aval">$10,000</span>
+  </div>
+  <div class="aitem">
+    <span class="alabel">Current Value</span>
+    <span class="aval g" id="av">$11,847.32</span>
+  </div>
+  <div class="aitem">
+    <span class="alabel">Total Return</span>
+    <span class="aval g" id="ar">+18.47%</span>
+  </div>
+  <div class="aitem">
+    <span class="alabel">Today P&L</span>
+    <span class="aval g" id="ap">+$142.18</span>
+  </div>
+  <div class="aitem">
+    <span class="alabel">Trades</span>
+    <span class="aval c">247</span>
+  </div>
+  <div class="aitem">
+    <span class="alabel">Open</span>
+    <span class="aval c">3</span>
+  </div>
+  <div class="acct-divider"></div>
+  <!-- MINI WATERFALL -->
+  <div class="acct-wf" id="acct-wf"></div>
+  <div class="acct-divider"></div>
+  <div class="poll-ind">
+    <div class="poll-ring" id="poll-ring"><div class="poll-fill"></div></div>
+    <span id="poll-label">SYNC: 60s</span>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- COL 1 — SCANNER -->
+  <div class="col-scanner">
+    <div class="panel p-scanner">
+      <div class="ptitle">
+        <span><span class="ptitle-bar"></span>SIGNAL SCANNER</span>
+        <span class="ptitle-r" id="scan-hdr">847 ASSETS</span>
+      </div>
+      <div class="scanner-list" id="scanner-list"></div>
+    </div>
+  </div>
+
+  <!-- COL 2 — CENTER (positions / equity / events) -->
+  <div class="col-center">
+
+    <!-- POSITIONS -->
+    <div class="panel p-positions">
+      <div class="ptitle">
+        <span><span class="ptitle-bar"></span>OPEN POSITIONS</span>
+        <span class="ptitle-r">3 ACTIVE · P&L LIVE</span>
+      </div>
+      <table class="pos-table">
+        <thead>
+          <tr>
+            <th>Asset</th><th>Track</th><th>Conv</th>
+            <th>Entry</th><th>Current</th>
+            <th>Stop</th><th>Target</th>
+            <th>Progress</th><th>P&L</th><th>Hold</th>
+          </tr>
+        </thead>
+        <tbody id="pos-body"></tbody>
+      </table>
+    </div>
+
+    <!-- EQUITY CURVE -->
+    <div class="panel eq-panel">
+      <div class="eq-head">
+        <span class="eq-title"><span class="ptitle-bar"></span>EQUITY CURVE</span>
+        <span class="eq-stats">
+          <span class="lbl">PEAK</span><span class="g">$12,114</span>
+          <span class="lbl">DRAWDOWN</span><span class="r">-2.20%</span>
+          <span class="lbl">TWR</span><span>+18.47%</span>
+        </span>
+      </div>
+      <div class="eq-svg-wrap">
+        <svg id="equity-svg" viewBox="0 0 600 80" preserveAspectRatio="none"></svg>
+      </div>
+    </div>
+
+    <!-- EVENT FEED -->
+    <div class="panel p-events">
+      <div class="ptitle">
+        <span><span class="ptitle-bar"></span>SYSTEM EVENT FEED</span>
+        <span class="ptitle-r" id="ev-count">0 EVENTS TODAY</span>
+      </div>
+      <div class="event-feed" id="event-feed"></div>
+    </div>
+
+  </div>
+
+  <!-- COL 3 — METRICS + KERNEL -->
+  <div class="col-metrics">
+
+    <!-- SYSTEM METRICS -->
+    <div class="panel p-waterfall">
+      <div class="ptitle">
+        <span><span class="ptitle-bar"></span>SYSTEM METRICS</span>
+      </div>
+
+      <!-- WIN RATE METRIC CARD -->
+      <div class="mc">
+        <div class="mc-left">
+          <div class="mc-label">WIN RATE</div>
+          <div class="mc-value g" id="wr-val">68.4%</div>
+          <div class="mc-sub">169 wins / 247 trades</div>
+        </div>
+        <svg class="mc-arc" width="56" height="34" viewBox="0 0 56 34" overflow="visible">
+          <path d="M4,30 A24,24 0 0,1 52,30" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="5" stroke-linecap="round"/>
+          <path d="M4,30 A24,24 0 0,1 52,30" fill="none" stroke="var(--green)" stroke-width="5" stroke-linecap="round"
+            stroke-dasharray="75.4" stroke-dashoffset="24.3" opacity="0.9"/>
+          <text x="28" y="22" text-anchor="middle" font-family="Share Tech Mono" font-size="8" fill="var(--green)">68.4%</text>
+        </svg>
+      </div>
+
+      <!-- SHARPE METRIC CARD -->
+      <div class="mc">
+        <div class="mc-left">
+          <div class="mc-label">SHARPE RATIO</div>
+          <div class="mc-value c" id="sr-val">2.31</div>
+          <div class="mc-sub">target ≥ 1.0 · phase 3 gate</div>
+        </div>
+        <svg class="mc-arc" width="56" height="34" viewBox="0 0 56 34" overflow="visible">
+          <path d="M4,30 A24,24 0 0,1 52,30" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="5" stroke-linecap="round"/>
+          <path d="M4,30 A24,24 0 0,1 52,30" fill="none" stroke="var(--cyan)" stroke-width="5" stroke-linecap="round"
+            stroke-dasharray="75.4" stroke-dashoffset="9" opacity="0.9"/>
+          <text x="28" y="22" text-anchor="middle" font-family="Share Tech Mono" font-size="8" fill="var(--cyan)">2.31</text>
+        </svg>
+      </div>
+
+      <!-- L2 DELTA — PHASE 1 OFFLINE STATE -->
+      <div class="mc mc-delta offline" id="l2-card">
+        <div class="mc-left">
+          <div class="mc-label" style="color:var(--amber);letter-spacing:3px">LANE 2 Δ DELTA</div>
+          <div class="mc-value dim" style="font-size:18px;color:var(--amber)" id="l2-val">OFFLINE</div>
+          <div class="mc-sub" style="color:var(--amber);opacity:0.75">lane2_enabled = false · scaffold mode</div>
+          <div class="mc-sub" style="color:var(--w3);margin-top:3px">0 / 200 PREDICTIONS RESOLVED</div>
+        </div>
+        <svg class="mc-arc" width="56" height="40" viewBox="0 0 56 40" overflow="visible">
+          <!-- empty arc -->
+          <path d="M4,36 A24,24 0 0,1 52,36" fill="none" stroke="rgba(255,171,0,0.10)" stroke-width="7" stroke-linecap="round"/>
+          <!-- threshold marker greyed -->
+          <path d="M4,36 A24,24 0 0,1 52,36" fill="none" stroke="var(--amber)" stroke-width="7" stroke-linecap="round"
+            stroke-dasharray="75.4" stroke-dashoffset="37.7" opacity="0.20"/>
+          <text x="28" y="26" text-anchor="middle" font-family="Share Tech Mono" font-size="8" fill="var(--amber)" opacity="0.7">5%</text>
+          <text x="28" y="36" text-anchor="middle" font-family="Share Tech Mono" font-size="6" fill="var(--w3)">GATE</text>
+        </svg>
+      </div>
+
+      <!-- CONVICTION TIER -->
+      <div class="mc">
+        <div class="mc-left">
+          <div class="mc-label">CONVICTION TIERS</div>
+          <div class="mc-value" style="color:var(--amber);font-size:18px">MAX 41%</div>
+          <div class="mc-sub">High 33% · Std 26% · sizing ×1.5 / ×1.25 / ×1.0</div>
+        </div>
+        <svg width="56" height="56" viewBox="0 0 56 56" style="flex-shrink:0">
+          <circle cx="28" cy="28" r="22" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="7"/>
+          <circle cx="28" cy="28" r="22" fill="none" stroke="var(--w3)" stroke-width="7"
+            stroke-dasharray="35.9 102.1" stroke-dashoffset="0" transform="rotate(-90 28 28)"/>
+          <circle cx="28" cy="28" r="22" fill="none" stroke="var(--cyan)" stroke-width="7"
+            stroke-dasharray="45.6 92.4" stroke-dashoffset="-35.9" transform="rotate(-90 28 28)"/>
+          <circle cx="28" cy="28" r="22" fill="none" stroke="var(--amber)" stroke-width="7"
+            stroke-dasharray="56.5 81.5" stroke-dashoffset="-81.5" transform="rotate(-90 28 28)"/>
+          <text x="28" y="31" text-anchor="middle" font-family="Share Tech Mono" font-size="8" fill="var(--amber)">41%</text>
+        </svg>
+      </div>
+
+    </div>
+
+    <!-- KERNEL 3D — PHASE 1 GRAPH STATE -->
+    <div class="panel p-kernel">
+      <canvas id="kernel-canvas"></canvas>
+      <div class="kernel-overlay">
+        <span class="kernel-title">KNOWLEDGE KERNELS</span>
+        <span class="kernel-count" id="k-count">93 NODES · 76 EDGES</span>
+      </div>
+      <div class="kernel-legend">
+        <div class="kl-item"><span class="kl-dot" style="background:#00c2ff"></span>TRADES</div>
+        <div class="kl-item"><span class="kl-dot" style="background:#ffab00"></span>NEWS</div>
+        <div class="kl-item"><span class="kl-dot" style="background:#ddeeff"></span>WEEKLY</div>
+        <div class="kl-item"><span class="kl-dot" style="background:#3d6080"></span>SCAFFOLD</div>
+        <div class="kl-item"><span class="kl-dot" style="background:#00e676"></span>RULES</div>
+      </div>
+      <div class="kernel-bottom">
+        <div class="kernel-stat">PHASE <span>1</span></div>
+        <div class="kernel-stat">CYCLES <span>6</span></div>
+        <div class="kernel-stat">LANE 2 <span class="amber">OFFLINE</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- COL 4 — RETURNS BY DOMAIN + RULES ADDED -->
+  <div class="col-extra">
+
+    <!-- RETURNS BY DOMAIN -->
+    <div class="panel p-returns">
+      <div class="ptitle">
+        <span><span class="ptitle-bar"></span>RETURNS BY DOMAIN</span>
+        <span class="ptitle-r">3×3</span>
+      </div>
+      <div class="matrix">
+        <div class="matrix-grid">
+          <!-- header row -->
+          <div></div>
+          <div class="matrix-h">CON</div>
+          <div class="matrix-h">MOD</div>
+          <div class="matrix-h">AGG</div>
+          <div class="matrix-h sigma">Σ</div>
+
+          <!-- crypto row -->
+          <div class="matrix-rh">Crypto</div>
+          <div class="matrix-cell">
+            <div class="mc-w g">71%</div>
+            <div class="mc-s">SR <span class="c">2.10</span></div>
+            <div class="mc-r g">+8.2%</div>
+          </div>
+          <div class="matrix-cell">
+            <div class="mc-w g">66%</div>
+            <div class="mc-s">SR <span class="c">2.45</span></div>
+            <div class="mc-r g">+11.4%</div>
+          </div>
+          <div class="matrix-cell">
+            <div class="mc-w g">62%</div>
+            <div class="mc-s">SR <span class="c">2.71</span></div>
+            <div class="mc-r g">+14.8%</div>
+          </div>
+          <div class="matrix-cell sigma-col">
+            <div class="mc-r g big">+11.5%</div>
+            <div class="mc-s">SR <span class="c">2.42</span></div>
+          </div>
+
+          <!-- L-Cap row -->
+          <div class="matrix-rh">L-Cap</div>
+          <div class="matrix-cell">
+            <div class="mc-w g">73%</div>
+            <div class="mc-s">SR <span class="c">1.89</span></div>
+            <div class="mc-r g">+4.1%</div>
+          </div>
+          <div class="matrix-cell">
+            <div class="mc-w g">69%</div>
+            <div class="mc-s">SR <span class="c">2.18</span></div>
+            <div class="mc-r g">+5.7%</div>
+          </div>
+          <div class="matrix-cell">
+            <div class="mc-w g">64%</div>
+            <div class="mc-s">SR <span class="c">2.34</span></div>
+            <div class="mc-r g">+7.2%</div>
+          </div>
+          <div class="matrix-cell sigma-col">
+            <div class="mc-r g big">+5.7%</div>
+            <div class="mc-s">SR <span class="c">2.14</span></div>
+          </div>
+
+          <!-- Growth row -->
+          <div class="matrix-rh">Growth</div>
+          <div class="matrix-cell">
+            <div class="mc-w g">68%</div>
+            <div class="mc-s">SR <span class="c">1.74</span></div>
+            <div class="mc-r g">+3.4%</div>
+          </div>
+          <div class="matrix-cell">
+            <div class="mc-w g">64%</div>
+            <div class="mc-s">SR <span class="c">2.02</span></div>
+            <div class="mc-r g">+5.1%</div>
+          </div>
+          <div class="matrix-cell">
+            <div class="mc-w">59%</div>
+            <div class="mc-s">SR <span class="c">2.27</span></div>
+            <div class="mc-r g">+8.9%</div>
+          </div>
+          <div class="matrix-cell sigma-col">
+            <div class="mc-r g big">+5.8%</div>
+            <div class="mc-s">SR <span class="c">2.01</span></div>
+          </div>
+
+          <!-- aggregate row -->
+          <div class="matrix-rh sigma">Σ</div>
+          <div class="matrix-cell sigma-row">
+            <div class="mc-r g big">+5.2%</div>
+            <div class="mc-s">SR <span class="c">1.91</span></div>
+          </div>
+          <div class="matrix-cell sigma-row">
+            <div class="mc-r g big">+7.4%</div>
+            <div class="mc-s">SR <span class="c">2.22</span></div>
+          </div>
+          <div class="matrix-cell sigma-row">
+            <div class="mc-r g big">+10.3%</div>
+            <div class="mc-s">SR <span class="c">2.44</span></div>
+          </div>
+          <div class="matrix-cell sigma-corner">
+            <div class="mc-r g big">+18.47%</div>
+            <div class="mc-s c">TOTAL</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RULES ADDED THIS WEEK -->
+    <div class="panel p-rules">
+      <div class="ptitle">
+        <span><span class="ptitle-bar"></span>RULES ADDED THIS WEEK</span>
+        <span class="ptitle-r">CYCLE 6</span>
+      </div>
+      <div class="rules-list">
+        <div class="rule-row sec-a">
+          <div class="rule-badge sec-a">A</div>
+          <div class="rule-day">TUE</div>
+          <div class="rule-text">Loosen <strong>MOD</strong> threshold · crypto Choppy → 65 to 63</div>
+        </div>
+        <div class="rule-row sec-b">
+          <div class="rule-badge sec-b">B</div>
+          <div class="rule-day">TUE</div>
+          <div class="rule-text">Prohibit <strong>AGG</strong> stocks during EARNINGS impact=HIGH</div>
+        </div>
+        <div class="rule-row sec-a">
+          <div class="rule-badge sec-a">A</div>
+          <div class="rule-day">WED</div>
+          <div class="rule-text">Prioritize <strong>MAX</strong>-tier NVDA setups · cohort SR 2.6</div>
+        </div>
+        <div class="rule-row sec-c">
+          <div class="rule-badge sec-c">C</div>
+          <div class="rule-day">THU</div>
+          <div class="rule-text">Pause candidate · VWAP reject in Trending Up regime</div>
+        </div>
+        <div class="rule-row sec-b">
+          <div class="rule-badge sec-b">B</div>
+          <div class="rule-day">FRI</div>
+          <div class="rule-text">Prohibit <strong>CON</strong> during LOW time bucket on weekends</div>
+        </div>
+        <div class="rules-foot">
+          5 RULES · CYCLE <span>6</span> · TOTAL <span>28</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-inner" id="ticker"></div>
+</div>
+
+<!-- TRADE OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="ov-card" id="ov-card">
+    <div class="ov-type" id="ov-type"></div>
+    <div class="ov-asset" id="ov-asset"></div>
+    <div class="ov-price" id="ov-price"></div>
+    <div class="ov-indicators" id="ov-inds"></div>
+    <div id="ov-scores"></div>
+    <div class="ov-bottom">
+      <div class="ov-conviction" id="ov-conv"></div>
+      <div class="ov-lane2" id="ov-lane2"></div>
+      <div class="ov-status" id="ov-status"></div>
+    </div>
+    <div class="ov-countdown" id="ov-countdown"></div>
+  </div>
+</div>
+
+<script>
+// ── CLOCK ──
+setInterval(()=>{
+  const n=new Date();
+  document.getElementById('clock').textContent=
+    [n.getUTCHours(),n.getUTCMinutes(),n.getUTCSeconds()]
+    .map(v=>String(v).padStart(2,'0')).join(':') + ' UTC';
+},1000);
+
+// ── MODE TOGGLE ──
+document.querySelectorAll('.mode-pill').forEach(p=>{
+  p.addEventListener('click',()=>{
+    document.querySelectorAll('.mode-pill').forEach(x=>x.classList.remove('active'));
+    p.classList.add('active');
+  });
+});
+
+// ── SCANNER ──
+const assets=[
+  {sym:'BTC/USD',track:'MOD',score:0,bar:0,fired:true},
+  {sym:'ETH/USD',track:'CON',score:0,bar:0,fired:false},
+  {sym:'SOL/USD',track:'AGG',score:0,bar:0,fired:false},
+  {sym:'NVDA',track:'AGG',score:0,bar:0,fired:true},
+  {sym:'AAPL',track:'MOD',score:0,bar:0,fired:false},
+  {sym:'TSLA',track:'CON',score:0,bar:0,fired:false},
+  {sym:'SPY',track:'MOD',score:0,bar:0,fired:false},
+  {sym:'QQQ',track:'AGG',score:0,bar:0,fired:false},
+  {sym:'AVAX/USD',track:'AGG',score:0,bar:0,fired:false},
+  {sym:'LINK/USD',track:'MOD',score:0,bar:0,fired:false},
+  {sym:'MSFT',track:'CON',score:0,bar:0,fired:false},
+  {sym:'AMZN',track:'MOD',score:0,bar:0,fired:false},
+  {sym:'MATIC/USD',track:'AGG',score:0,bar:0,fired:false},
+  {sym:'AMD',track:'MOD',score:0,bar:0,fired:false},
+];
+
+function scoreCls(s){return s>=65?'hi':s>=40?'mi':'lo';}
+function barClr(s){
+  if(s>=65)return'var(--green)';
+  if(s>=40)return'var(--cyan)';
+  if(s>=20)return'var(--amber)';
+  return'var(--w3)';
+}
+function rowCls(a,active){
+  if(a.fired)return'srow fired';
+  if(active)return'srow eval';
+  if(a.score>=65)return'srow thresh';
+  return'srow';
+}
+
+function buildScanner(){
+  const list=document.getElementById('scanner-list');
+  list.innerHTML='';
+  assets.forEach((a,i)=>{
+    const row=document.createElement('div');
+    row.className=rowCls(a,false);
+    row.id=`sr-${i}`;
+    row.innerHTML=`
+      <div>
+        <div class="sasset">${a.sym}</div>
+        <div class="strack">${a.track}</div>
+      </div>
+      <div>
+        <div class="sbar-bg">
+          <div class="sbar-fill" id="sb-${i}" style="width:${a.bar}%;background:${barClr(a.score)}"></div>
+        </div>
+      </div>
+      <div class="sscore ${scoreCls(a.score)}" id="ss-${i}">${a.score||'—'}</div>
+      ${a.fired?'<div class="fired-badge">FIRED</div>':''}
+    `;
+    list.appendChild(row);
+  });
+}
+
+function animateScanner(){
+  const i=Math.floor(Math.random()*assets.length);
+  const a=assets[i];
+  if(a.fired)return;
+  const row=document.getElementById(`sr-${i}`);
+  if(!row)return;
+  row.className='srow eval';
+  const target=Math.floor(Math.random()*95)+5;
+  let cur=0;
+  const step=setInterval(()=>{
+    cur=Math.min(cur+Math.floor(Math.random()*7)+3,target);
+    a.score=cur;a.bar=cur;
+    const se=document.getElementById(`ss-${i}`);
+    const be=document.getElementById(`sb-${i}`);
+    if(se){se.textContent=cur;se.className=`sscore ${scoreCls(cur)}`;}
+    if(be){be.style.width=cur+'%';be.style.background=barClr(cur);}
+    if(cur>=target){
+      clearInterval(step);
+      row.className=rowCls(a,false);
+    }
+  },35);
+}
+
+buildScanner();
+setInterval(animateScanner,350);
+
+// ── POSITIONS ──
+const positions=[
+  {asset:'BTC/USD',track:'mod',tl:'MOD',conv:'max',cl:'MAX',
+   entry:67420.5,cur:68104.2,stop:66800,target:69200,
+   pnl:683.7,pnlPct:1.01,prog:55,hold:'2h 14m'},
+  {asset:'NVDA',track:'agg',tl:'AGG',conv:'hi',cl:'HIGH',
+   entry:142.3,cur:145.8,stop:139.5,target:148.2,
+   pnl:350,pnlPct:2.46,prog:60,hold:'47m'},
+  {asset:'ETH/USD',track:'con',tl:'CON',conv:'std',cl:'STD',
+   entry:3280,cur:3241.5,stop:3210,target:3380,
+   pnl:-38.5,pnlPct:-1.17,prog:45,hold:'1h 03m'},
+];
+
+let pnlOffset=[0,0,0];
+
+function buildPositions(){
+  const tb=document.getElementById('pos-body');
+  tb.innerHTML='';
+  positions.forEach((p,i)=>{
+    const pos=p.pnl+pnlOffset[i]>=0;
+    const clr=pos?'var(--green)':'var(--red)';
+    const pv=p.pnl+pnlOffset[i];
+    const pp=p.pnlPct+pnlOffset[i]/p.entry*100;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><span class="passet">${p.asset}</span></td>
+      <td><span class="ptrack ${p.track}">${p.tl}</span></td>
+      <td><span class="pconv ${p.conv}">${p.cl}</span></td>
+      <td style="font-family:var(--mono);font-size:9px;color:var(--w2)">${p.entry.toLocaleString()}</td>
+      <td style="font-family:var(--mono);font-size:10px;color:var(--white)" id="pcur-${i}">${(p.cur+pnlOffset[i]*0.01).toLocaleString()}</td>
+      <td style="font-family:var(--mono);font-size:9px;color:var(--red)">${p.stop.toLocaleString()}</td>
+      <td style="font-family:var(--mono);font-size:9px;color:var(--green)">${p.target.toLocaleString()}</td>
+      <td class="prog-wrap">
+        <div class="prog-bg"><div class="prog-fill" style="width:${p.prog}%;background:${clr}"></div></div>
+        <div style="font-family:var(--mono);font-size:7px;color:var(--w3);margin-top:2px">${p.prog}% TO TARGET</div>
+      </td>
+      <td>
+        <div class="ppnl" style="color:${clr}" id="ppnl-${i}">${pv>=0?'+':''}$${Math.abs(pv).toFixed(2)}</div>
+        <div style="font-family:var(--mono);font-size:8px;color:${clr}">${pp>=0?'+':''}${pp.toFixed(2)}%</div>
+      </td>
+      <td style="font-family:var(--mono);font-size:9px;color:var(--w3)">${p.hold}</td>
+    `;
+    tb.appendChild(tr);
+  });
+}
+buildPositions();
+
+setInterval(()=>{
+  positions.forEach((_,i)=>{
+    pnlOffset[i]+=(Math.random()-.45)*4;
+  });
+  buildPositions();
+},3000);
+
+// ── EQUITY CURVE ──
+function buildEquityCurve(){
+  // 60 daily snapshots, ending at 11847
+  const start=10000;
+  const end=11847;
+  const peak=12114;
+  const N=60;
+  const pts=[];
+  let cur=start;
+  // walk with drift toward end + a peak excursion
+  for(let i=0;i<N;i++){
+    const progress=i/(N-1);
+    // base trajectory
+    const base=start+(end-start)*progress;
+    // add wave + noise
+    const wave=Math.sin(progress*Math.PI*2.5)*180;
+    const noise=(Math.random()-.5)*120;
+    let v=base+wave+noise;
+    // force a peak around 80% of timeline
+    if(i===Math.floor(N*0.82)) v=peak;
+    if(i===Math.floor(N*0.83)) v=peak-50;
+    if(i===Math.floor(N*0.84)) v=peak-130;
+    pts.push(v);
+  }
+  pts[0]=start;
+  pts[N-1]=end;
+
+  const svg=document.getElementById('equity-svg');
+  const W=600, H=80;
+  const minV=Math.min(...pts)*0.995;
+  const maxV=Math.max(...pts)*1.005;
+  const x=i=>(i/(N-1))*W;
+  const y=v=>H-((v-minV)/(maxV-minV))*H;
+
+  // baseline at $10K (capital base)
+  const baseY=y(start);
+
+  // path string
+  let d='';
+  pts.forEach((v,i)=>{
+    d+=(i===0?'M':'L')+x(i).toFixed(2)+','+y(v).toFixed(2)+' ';
+  });
+
+  // fill area (closed to baseline)
+  let fillD=d+`L${W},${baseY} L0,${baseY} Z`;
+
+  svg.innerHTML=`
+    <defs>
+      <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="rgba(0,194,255,0.35)"/>
+        <stop offset="100%" stop-color="rgba(0,194,255,0)"/>
+      </linearGradient>
+      <linearGradient id="eqGradPos" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="rgba(0,230,118,0.35)"/>
+        <stop offset="100%" stop-color="rgba(0,230,118,0)"/>
+      </linearGradient>
+    </defs>
+    <!-- capital baseline -->
+    <line x1="0" y1="${baseY}" x2="${W}" y2="${baseY}"
+      stroke="rgba(255,171,0,0.4)" stroke-width="0.6" stroke-dasharray="3,3"/>
+    <text x="4" y="${baseY-3}" font-family="Share Tech Mono" font-size="6" fill="var(--amber)" opacity="0.6">$10K BASE</text>
+    <!-- fill -->
+    <path d="${fillD}" fill="url(#eqGradPos)" stroke="none"/>
+    <!-- line -->
+    <path d="${d}" fill="none" stroke="var(--green)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- end dot -->
+    <circle cx="${x(N-1)}" cy="${y(pts[N-1])}" r="2.5" fill="var(--green)">
+      <animate attributeName="r" values="2.5;4;2.5" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <!-- peak marker -->
+    <circle cx="${x(Math.floor(N*0.82))}" cy="${y(peak)}" r="2" fill="var(--cyan)" opacity="0.8"/>
+  `;
+}
+buildEquityCurve();
+
+// ── EVENT FEED ── (DATA SYNC vocabulary)
+let evCount=0;
+
+const seedEvents=[
+  {cls:'loop',icon:'⟳',text:'LEARNING LOOP CYCLE 6 · 28 rules · SR→2.31',val:null,t:'06:00'},
+  {cls:'rule',icon:'§',text:'RULE WRITTEN · Section A · Loosen MOD crypto Choppy threshold',val:null,t:'06:01'},
+  {cls:'close-win',icon:'✓',text:'TRADE CLOSED · SOL/USD · target hit',val:'+6.2%',valcls:'g',t:'09:14'},
+  {cls:'open',icon:'▶',text:'TRADE OPEN · BTC/USD · MOD track · MAX conviction',val:null,t:'09:31'},
+  {cls:'signal',icon:'◈',text:'COMPOSITE THRESHOLD HIT · BTC/USD · score 87 · MAX tier confirmed',val:null,t:'09:30'},
+  {cls:'close-win',icon:'✓',text:'TRADE CLOSED · AAPL · target hit',val:'+2.8%',valcls:'g',t:'10:47'},
+  {cls:'open',icon:'▶',text:'TRADE OPEN · NVDA · AGG track · HIGH conviction',val:null,t:'11:02'},
+  {cls:'close-loss',icon:'✗',text:'TRADE CLOSED · TSLA · stop hit',val:'-1.4%',valcls:'r',t:'12:18'},
+  {cls:'open',icon:'▶',text:'TRADE OPEN · ETH/USD · CON track · STD conviction',val:null,t:'13:45'},
+  {cls:'signal',icon:'◈',text:'RSI DIVERGENCE · BTC/USD · 28.4 oversold',val:null,t:'14:22'},
+  {cls:'sync',icon:'◉',text:'DATA SYNC · 247 trades · positions reconciled',val:null,t:'14:30'},
+  {cls:'gate',icon:'◆',text:'GATE PASSED · weekly Sharpe 2.31 above 1.0 floor',val:null,t:'14:45'},
+];
+
+function timeStr(){
+  const n=new Date();
+  return [n.getHours(),n.getMinutes()].map(v=>String(v).padStart(2,'0')).join(':');
+}
+
+function addEvent(cls,icon,text,val,valcls,tstr){
+  evCount++;
+  document.getElementById('ev-count').textContent=evCount+' EVENTS TODAY';
+  const feed=document.getElementById('event-feed');
+  const ev=document.createElement('div');
+  ev.className=`ev ${cls}`;
+  ev.innerHTML=`
+    <span class="ev-icon">${icon}</span>
+    <span class="ev-time">${tstr||timeStr()}</span>
+    <span class="ev-text">${text}</span>
+    ${val?`<span class="ev-val ${valcls}">${val}</span>`:''}
+  `;
+  feed.insertBefore(ev,feed.firstChild);
+  // keep max 8 (shorter panel now)
+  while(feed.children.length>8)feed.removeChild(feed.lastChild);
+}
+
+// seed
+seedEvents.forEach(e=>addEvent(e.cls,e.icon,e.text,e.val||null,e.valcls||'',e.t));
+
+// random events (graph-native vocabulary)
+const assetNames=['BTC/USD','ETH/USD','SOL/USD','NVDA','AAPL','SPY','AVAX/USD'];
+setInterval(()=>{
+  const r=Math.random();
+  const a=assetNames[Math.floor(Math.random()*assetNames.length)];
+  if(r<0.25){
+    addEvent('signal','◈',`RSI DIVERGENCE · ${a} · composite ${Math.floor(Math.random()*30)+50}`,null,'');
+  } else if(r<0.40){
+    addEvent('sync','◉',`DATA SYNC · ${247+Math.floor(Math.random()*3)} trades · graph reconciled`,null,'');
+  } else if(r<0.50){
+    const v=(Math.random()*4+0.5).toFixed(1);
+    addEvent('close-win','✓',`TRADE CLOSED · ${a} · target hit`,`+${v}%`,'g');
+  } else if(r<0.58){
+    addEvent('signal','◈',`COMPOSITE THRESHOLD HIT · ${a} · ${Math.floor(Math.random()*15)+72}`,null,'');
+  } else if(r<0.65){
+    const sec=['A','B','C'][Math.floor(Math.random()*3)];
+    addEvent('rule','§',`RULE WRITTEN · Section ${sec} · cohort threshold update`,null,'');
+  }
+},8000);
+
+// ── SYNC INDICATOR ──
+let pollSecs=60;
+setInterval(()=>{
+  pollSecs--;
+  document.getElementById('poll-label').textContent=`SYNC: ${pollSecs}s`;
+  if(pollSecs<=0){
+    pollSecs=60;
+    const ring=document.getElementById('poll-ring');
+    ring.classList.add('active');
+    setTimeout(()=>ring.classList.remove('active'),800);
+    addEvent('sync','◉',`DATA SYNC · ${247+Math.floor(Math.random()*4)} trades · positions synced`,null,'');
+  }
+},1000);
+
+// ── MINI WATERFALL IN ACCOUNT BAR ──
+const wkData=[
+  {w:'W1',p:3.2,pos:true},{w:'W2',p:5.1,pos:true},
+  {w:'W3',p:-1.8,pos:false},{w:'W4',p:4.7,pos:true},
+  {w:'W5',p:6.2,pos:true},{w:'W6',p:2.1,pos:true,cur:true},
+];
+
+function buildMiniWaterfall(){
+  const wrap=document.getElementById('acct-wf');
+  if(!wrap)return;
+  wrap.innerHTML='<div class="acct-wf-baseline"></div>';
+  const maxP=7;
+  const barH=wrap.clientHeight-20;
+  wkData.forEach((w,i)=>{
+    const col=document.createElement('div');
+    col.className='acct-wf-col';
+
+    const pct=document.createElement('div');
+    pct.className='acct-wf-pct';
+    pct.style.color=w.cur?'var(--cyan)':w.pos?'var(--green)':'var(--red)';
+    pct.textContent=(w.pos?'+':'')+w.p+'%';
+
+    const bar=document.createElement('div');
+    bar.className='acct-wf-bar '+(w.cur?'cur':w.pos?'pos':'neg');
+    bar.style.height='2px';
+
+    const lbl=document.createElement('div');
+    lbl.className='acct-wf-lbl';
+    lbl.textContent=w.w;
+
+    col.appendChild(pct);
+    col.appendChild(bar);
+    col.appendChild(lbl);
+    wrap.appendChild(col);
+
+    const targetH=Math.max(4, Math.abs(w.p)/maxP*barH);
+    setTimeout(()=>{bar.style.height=targetH+'px';},80+i*100);
+  });
+}
+setTimeout(buildMiniWaterfall,200);
+window.addEventListener('resize',buildMiniWaterfall);
+
+// ── 3D KERNEL MAP — PHASE 1 GRAPH STATE ──
+// Renders the actual Phase 1 node population:
+//   TradeNodes (cyan), NewsContextNodes (amber),
+//   WeeklyContextNodes (white, larger), PredictionNodes SCAFFOLD (dim gray),
+//   RuleNodes (green, floating, no edges).
+// Edges: HAS_NEWS_CONTEXT (Trade→News), CONTAINS_TRADE (Weekly→Trade),
+//        HAS_PREDICTION (Trade→Prediction).
+// No IndicatorNodes, no Lane 2 edges (Phase 4+).
+(function(){
+  const canvas=document.getElementById('kernel-canvas');
+  const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setClearColor(0x000000,0);
+
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(60,1,0.1,1000);
+  camera.position.set(0,0,130);
+
+  // Phase 1 node population
+  // 30 TradeNodes (cyan), 15 NewsContext (amber), 6 Weekly (white large),
+  // 30 PredictionNode SCAFFOLDs (dim gray, paired to trades),
+  // 12 RuleNodes (green, floating)
+  const tradeNodes=[];
+  const newsNodes=[];
+  const weeklyNodes=[];
+  const predNodes=[];
+  const ruleNodes=[];
+
+  // helper to add a node
+  function addNode(arr,x,y,z,size,color,opacity){
+    const geo=new THREE.SphereGeometry(size,10,10);
+    const mat=new THREE.MeshBasicMaterial({
+      color:color,transparent:true,opacity:opacity
+    });
+    const mesh=new THREE.Mesh(geo,mat);
+    mesh.position.set(x,y,z);
+    scene.add(mesh);
+    const node={x,y,z,color,size,baseOpacity:opacity,mesh};
+    arr.push(node);
+    return node;
+  }
+
+  // Trade cluster (cyan) — main mass, asset-class loose grouping
+  const cryptoCenter=[-15,0,0];
+  const lcapCenter=[15,5,-5];
+  const growthCenter=[5,-15,8];
+
+  function placeTrades(center,n){
+    for(let i=0;i<n;i++){
+      const r=8+Math.random()*9;
+      const theta=Math.random()*Math.PI*2;
+      const phi=Math.random()*Math.PI;
+      const x=center[0]+r*Math.sin(phi)*Math.cos(theta);
+      const y=center[1]+r*Math.sin(phi)*Math.sin(theta);
+      const z=center[2]+r*Math.cos(phi);
+      const sz=1.0+Math.random()*0.7;
+      const trade=addNode(tradeNodes,x,y,z,sz,0x00c2ff,0.75+Math.random()*0.2);
+      // pair every TradeNode with a SCAFFOLD PredictionNode close behind
+      const offX=(Math.random()-0.5)*3;
+      const offY=(Math.random()-0.5)*3;
+      const offZ=(Math.random()-0.5)*3;
+      const pred=addNode(predNodes,x+offX,y+offY,z+offZ,sz*0.55,0x3d6080,0.35);
+      pred.partner=trade;
+    }
+  }
+  placeTrades(cryptoCenter,12);
+  placeTrades(lcapCenter,10);
+  placeTrades(growthCenter,8);
+
+  // NewsContextNodes (amber) — orbit around trade clusters
+  for(let i=0;i<15;i++){
+    const center=[cryptoCenter,lcapCenter,growthCenter][i%3];
+    const r=14+Math.random()*8;
+    const theta=Math.random()*Math.PI*2;
+    const phi=Math.random()*Math.PI;
+    const x=center[0]+r*Math.sin(phi)*Math.cos(theta);
+    const y=center[1]+r*Math.sin(phi)*Math.sin(theta);
+    const z=center[2]+r*Math.cos(phi);
+    addNode(newsNodes,x,y,z,1.0+Math.random()*0.4,0xffab00,0.7);
+  }
+
+  // WeeklyContextNodes (white, larger) — distinct positions
+  const weeklyPositions=[
+    [0,25,0],[20,18,5],[-20,18,5],[0,-25,5],[15,-12,-15],[-15,-12,-15]
+  ];
+  weeklyPositions.forEach(p=>{
+    addNode(weeklyNodes,p[0],p[1],p[2],2.4,0xddeeff,0.85);
+  });
+
+  // RuleNodes (green) — floating in their own region (no edges, read by query)
+  for(let i=0;i<12;i++){
+    const angle=(i/12)*Math.PI*2;
+    const r=42;
+    const x=Math.cos(angle)*r;
+    const y=Math.sin(angle)*r*0.6+15;
+    const z=Math.sin(angle*1.5)*8;
+    addNode(ruleNodes,x,y,z,1.1,0x00e676,0.8);
+  }
+
+  // edges
+  const edges=[];
+  function addEdge(a,b,color,opacity){
+    const pts=[
+      new THREE.Vector3(a.x,a.y,a.z),
+      new THREE.Vector3(b.x,b.y,b.z)
+    ];
+    const geo=new THREE.BufferGeometry().setFromPoints(pts);
+    const mat=new THREE.LineBasicMaterial({
+      color:color,transparent:true,opacity:opacity
+    });
+    const line=new THREE.Line(geo,mat);
+    scene.add(line);
+    edges.push({line,mat,baseOpacity:opacity});
+  }
+
+  // HAS_PREDICTION edges (Trade→Prediction, every trade)
+  predNodes.forEach(p=>{
+    if(p.partner) addEdge(p.partner,p,0x3d6080,0.25);
+  });
+
+  // HAS_NEWS_CONTEXT edges — about half of trades touch a news node
+  tradeNodes.forEach(t=>{
+    if(Math.random()<0.45){
+      const news=newsNodes[Math.floor(Math.random()*newsNodes.length)];
+      addEdge(t,news,0xffab00,0.18);
+    }
+  });
+
+  // CONTAINS_TRADE edges — each weekly node fans to a few trades
+  weeklyNodes.forEach(w=>{
+    const fanCount=4+Math.floor(Math.random()*4);
+    for(let k=0;k<fanCount;k++){
+      const t=tradeNodes[Math.floor(Math.random()*tradeNodes.length)];
+      addEdge(w,t,0xddeeff,0.12);
+    }
+  });
+
+  const allNodes=[...tradeNodes,...newsNodes,...weeklyNodes,...predNodes,...ruleNodes];
+
+  // resize
+  function resize(){
+    const p=canvas.parentElement;
+    const w=p.clientWidth,h=p.clientHeight;
+    renderer.setSize(w,h);
+    camera.aspect=w/h;
+    camera.updateProjectionMatrix();
+  }
+  resize();
+  window.addEventListener('resize',resize);
+
+  // animate
+  let t=0;
+  let pulseNodes=[];
+  let pulseTime=0;
+
+  function triggerPulse(){
+    // pulse a sample of trade nodes (data flowing through Lane 1)
+    pulseNodes=tradeNodes.filter(()=>Math.random()<0.25);
+    pulseTime=0;
+  }
+  setInterval(triggerPulse,4000);
+
+  function animate(){
+    requestAnimationFrame(animate);
+    t+=0.004;
+
+    scene.rotation.y=t*0.4;
+    scene.rotation.x=Math.sin(t*0.2)*0.15;
+    scene.rotation.z=Math.cos(t*0.15)*0.08;
+
+    if(pulseNodes.length){
+      pulseTime+=0.08;
+      pulseNodes.forEach(n=>{
+        const osc=Math.sin(pulseTime*3)*0.3+0.7;
+        n.mesh.material.opacity=n.baseOpacity*osc;
+        const s=1+Math.sin(pulseTime*3)*0.15;
+        n.mesh.scale.setScalar(s);
+      });
+      if(pulseTime>Math.PI*2){
+        pulseNodes.forEach(n=>{
+          n.mesh.material.opacity=n.baseOpacity;
+          n.mesh.scale.setScalar(1);
+        });
+        pulseNodes=[];
+      }
+    }
+
+    renderer.render(scene,camera);
+  }
+  animate();
+
+  // update node count display
+  document.getElementById('k-count').textContent=
+    `${allNodes.length} NODES · ${edges.length} EDGES`;
+})();
+
+// ── TRADE OVERLAY ──
+function showTradeOverlay(type,data){
+  const ov=document.getElementById('overlay');
+
+  const isOpen=type==='open';
+  const isWin=type==='close-win';
+
+  document.getElementById('ov-type').innerHTML=
+    `<span style="color:${isOpen?'var(--cyan)':isWin?'var(--green)':'var(--red)'};font-size:11px;letter-spacing:4px">
+      ${isOpen?'▶ TRADE EXECUTION':isWin?'✓ TARGET HIT':'✗ STOP HIT'}
+    </span>`;
+
+  document.getElementById('ov-asset').style.color=
+    isOpen?'var(--white)':isWin?'var(--green)':'var(--red)';
+  document.getElementById('ov-asset').textContent=data.asset;
+  document.getElementById('ov-price').textContent=
+    isOpen?`ENTRY @ $${data.entry.toLocaleString()}`:`EXIT @ $${data.exit.toLocaleString()}`;
+
+  const inds=document.getElementById('ov-inds');
+  if(isOpen){
+    inds.style.display='grid';
+    inds.innerHTML=data.inds.map(ind=>`
+      <div class="ov-ind">
+        <div class="ov-ind-name">${ind.name}</div>
+        <div class="ov-ind-val" style="color:${ind.positive?'var(--green)':'var(--amber)'}">${ind.val}</div>
+      </div>
+    `).join('');
+  } else {
+    inds.style.display='none';
+  }
+
+  const scores=document.getElementById('ov-scores');
+  if(isOpen){
+    scores.innerHTML=`
+      <div class="ov-score-row">
+        <span class="ov-score-label">COMPOSITE SCORE</span>
+        <div class="ov-score-bar"><div class="ov-score-fill" style="width:${data.composite}%;background:var(--green)"></div></div>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--green);margin-left:8px">${data.composite}</span>
+      </div>
+      <div class="ov-score-row">
+        <span class="ov-score-label">LANE 2 (SCAFFOLD)</span>
+        <div class="ov-score-bar"><div class="ov-score-fill" style="width:0%;background:var(--amber)"></div></div>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--amber);margin-left:8px">OFFLINE</span>
+      </div>
+    `;
+  } else {
+    scores.innerHTML=`
+      <div class="ov-score-row">
+        <span class="ov-score-label">HOLD DURATION</span>
+        <span style="font-family:var(--mono);font-size:14px;color:var(--w2);margin-left:8px">${data.hold}</span>
+      </div>
+      <div class="ov-score-row">
+        <span class="ov-score-label">RESULT</span>
+        <span style="font-family:var(--mono);font-size:18px;color:${isWin?'var(--green)':'var(--red)'};margin-left:8px">${isWin?'+':''}${data.pnlPct}% · ${isWin?'+':''}$${Math.abs(data.pnl).toFixed(2)}</span>
+      </div>
+    `;
+  }
+
+  const conv=document.getElementById('ov-conv');
+  conv.textContent=data.conviction||'';
+  conv.style.color=data.convColor||'var(--cyan)';
+  conv.style.border=`1px solid ${data.convColor||'var(--cyan)'}`;
+  conv.style.background=data.convBg||'var(--cyan2)';
+
+  document.getElementById('ov-lane2').textContent=isOpen?'LANE 2 SCAFFOLD · lane2_enabled=false':'';
+
+  document.getElementById('ov-status').textContent=
+    isOpen?'ORDER EXECUTED':isWin?'WIN · RULE UPDATED':'LOSS · PROHIBITION CANDIDATE';
+  document.getElementById('ov-status').style.color=
+    isOpen?'var(--cyan)':isWin?'var(--green)':'var(--red)';
+
+  const cd=document.getElementById('ov-countdown');
+  cd.style.animation='none';
+  void cd.offsetWidth;
+  cd.style.animation='countdown 8s linear forwards';
+  cd.style.background=isOpen?'var(--cyan)':isWin?'var(--green)':'var(--red)';
+
+  ov.classList.add('show');
+  setTimeout(()=>ov.classList.remove('show'),8200);
+}
+
+setTimeout(()=>{
+  showTradeOverlay('open',{
+    asset:'SOL/USD',
+    entry:182.4,
+    composite:88,
+    conviction:'MAX TIER',
+    convColor:'var(--green)',
+    convBg:'var(--green2)',
+    inds:[
+      {name:'RSI-14',val:'28.4 OVERSOLD',positive:true},
+      {name:'EMA-20',val:'BULLISH CROSS',positive:true},
+      {name:'VWAP',val:'PRICE ABOVE',positive:true},
+      {name:'MACD',val:'SIGNAL CROSS',positive:true},
+    ]
+  });
+  addEvent('open','▶','TRADE OPEN · SOL/USD · AGG track · MAX conviction',null,'');
+},5000);
+
+setTimeout(()=>{
+  showTradeOverlay('close-win',{
+    asset:'BTC/USD',
+    exit:69182,
+    hold:'3h 22m',
+    pnl:876.5,
+    pnlPct:1.30,
+    conviction:'MAX TIER',
+    convColor:'var(--green)',
+    convBg:'var(--green2)',
+  });
+  addEvent('close-win','✓','TRADE CLOSED · BTC/USD · target hit','+1.30%','g');
+},18000);
+
+document.getElementById('overlay').addEventListener('click',function(){
+  this.classList.remove('show');
+});
+
+// ── ACCOUNT BAR LIVE ──
+let av=11847.32,ap=142.18;
+setInterval(()=>{
+  const d=(Math.random()-.45)*6;
+  av+=d;ap+=d;
+  const avE=document.getElementById('av');
+  const arE=document.getElementById('ar');
+  const apE=document.getElementById('ap');
+  if(avE){
+    avE.textContent='$'+av.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    avE.className='aval '+(av>=10000?'g':'r');
+  }
+  if(arE){
+    const r=((av-10000)/10000*100).toFixed(2);
+    arE.textContent=(r>=0?'+':'')+r+'%';
+    arE.className='aval '+(r>=0?'g':'r');
+  }
+  if(apE){
+    apE.textContent=(ap>=0?'+':'')+'$'+Math.abs(ap).toFixed(2);
+    apE.className='aval '+(ap>=0?'g':'r');
+  }
+},2500);
+
+// ── TICKER ──
+const tdata=[
+  {s:'BTC/USD',p:'68,104',c:'+1.01%',d:'u'},
+  {s:'ETH/USD',p:'3,241',c:'-1.17%',d:'d'},
+  {s:'SOL/USD',p:'182.40',c:'+3.22%',d:'u'},
+  {s:'NVDA',p:'145.80',c:'+2.46%',d:'u'},
+  {s:'AAPL',p:'214.30',c:'+0.82%',d:'u'},
+  {s:'TSLA',p:'271.50',c:'-0.44%',d:'d'},
+  {s:'SPY',p:'548.20',c:'+0.31%',d:'u'},
+  {s:'QQQ',p:'471.80',c:'+0.58%',d:'u'},
+  {s:'AVAX/USD',p:'38.40',c:'+5.10%',d:'u'},
+  {s:'LINK/USD',p:'14.82',c:'+2.80%',d:'u'},
+  {s:'MSFT',p:'424.70',c:'+1.14%',d:'u'},
+  {s:'AMD',p:'168.40',c:'+1.88%',d:'u'},
+];
+
+const tickEl=document.getElementById('ticker');
+const all=[...tdata,...tdata];
+tickEl.innerHTML=all.map(t=>`
+  <div class="ti">
+    <span class="ti-sym">${t.s}</span>
+    <span class="ti-px">${t.p}</span>
+    <span class="ti-ch ${t.d}">${t.c}</span>
+  </div>
+`).join('');
+
+</script>
+</body>
+</html>
